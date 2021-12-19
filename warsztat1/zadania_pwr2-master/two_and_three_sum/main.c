@@ -162,6 +162,26 @@ void findSumOfThree(int* inputArray, int targetSum, int arrayLength){
 
 }
 
+int compareFunction(const void* a, const void* b){
+
+    struct SumItem* ptrLeftArgument = *((struct SumItem**)a);
+    struct SumItem* ptrRightArgument = *((struct SumItem**)b);
+
+    if(ptrLeftArgument->sum > ptrRightArgument->sum){
+
+        return 1;
+
+    } else if(ptrLeftArgument->sum < ptrRightArgument->sum){
+
+        return -1;
+
+    } else{
+        
+        return 0;
+
+    }
+}
+
 void findSumOfFours(int* inputArray, int targetSum, int arrayLength){
 
     int counter = 0;
@@ -186,6 +206,8 @@ void findSumOfFours(int* inputArray, int targetSum, int arrayLength){
     int low = 0;
     int high = sumItemsLength - 1;
 
+    qsort(sumItems, sumItemsLength, sizeof(struct SumItem*), compareFunction);
+
     while(low < high){
         if(sumItems[low]->sum + sumItems[high]->sum == targetSum && (!checkIfSumItemsHaveCommonElements(sumItems[low], sumItems[high]))){
 
@@ -196,7 +218,7 @@ void findSumOfFours(int* inputArray, int targetSum, int arrayLength){
 
             printf("Znaleziona czwórka: %d, %d, %d, %d\n", inputArray[i1], inputArray[i2], inputArray[i3], inputArray[i4]);
 
-            return;
+            low += 1;
 
         } else if(sumItems[low]->sum + sumItems[high]->sum > targetSum){
             high -= 1;
@@ -221,7 +243,7 @@ int main (int argc, char * argv[]){
 
   int foursTest1[8] = {10, 2, 3, 4, 5, 9, 7, 8};
   int foursTest2[8] = {1, 2, 3, 4, 5, 9, 7, 8};
-  int foursTest3[6] = {10, 20, 30, 40, 1, 2 };
+  int foursTest3[6] = {10, 20, 30, 40, 1, 2};
   int foursTest4[6] = {1, 4, 45, 6, 10, 12}; 
 
   int doublesTargetSum1 = -2;

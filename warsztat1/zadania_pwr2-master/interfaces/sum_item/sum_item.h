@@ -11,6 +11,5 @@ struct SumItem {
 
 struct SumItem* createSumItem(int sum, int firstElementIndex, int secondElementIndex);
 bool checkIfSumItemsHaveCommonElements(struct SumItem* firstItem, struct SumItem* secondItem);
-void quickSortOfSumItemsElements(struct SumItem** sumItemArray, int low, int high);
 
 #endif
