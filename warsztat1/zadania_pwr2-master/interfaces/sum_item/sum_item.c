@@ -4,17 +4,28 @@
 
 #include "sum_item.h"
 
-struct SumItem* createSumItem(int sum, int firstElementIndex, int secondElementIndex){
+struct SumItem* createSumItem(long long int sum, size_t firstElementIndex, size_t secondElementIndex){
+
     struct SumItem* newSumItem = malloc(sizeof(struct SumItem));
 
-    newSumItem->sum = sum;
-    newSumItem->firstElementIndex = firstElementIndex;
-    newSumItem->secondElementIndex = secondElementIndex;
+    if(newSumItem != NULL){
+
+        newSumItem->sum = sum;
+        newSumItem->firstElementIndex = firstElementIndex;
+        newSumItem->secondElementIndex = secondElementIndex;
+
+    }
 
     return newSumItem;
 }
 
 bool checkIfSumItemsHaveCommonElements(struct SumItem* firstItem, struct SumItem* secondItem){
+
+    if(firstItem == NULL || secondItem == NULL){
+
+        return false;
+        
+    }
 
     if(firstItem->firstElementIndex == secondItem->firstElementIndex){
 
@@ -32,11 +43,9 @@ bool checkIfSumItemsHaveCommonElements(struct SumItem* firstItem, struct SumItem
 
         return true;
 
-    } else{
-
-        return false;
-
     }
+
+    return false;
     
 }
 
