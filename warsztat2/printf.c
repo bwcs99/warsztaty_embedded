@@ -34,12 +34,11 @@
              19,  18,  17,  16,  15,  14,  13,  12,  11,  10, \
               9,   8,   7,   6,   5,   4,   3,   2,   1)
 
-
-static int my_printf(const char* format_p, ...);
+#define my_printf(format_p, ...) my_printf_helper(format_p, VA_ARGS_LENGTH(__VA_ARGS__),  __VA_ARGS__)
 
 static size_t convert_int_to_byte_array(const int number, char buffer[]);
 
-bool check_number_of_arguments(const char* format_p, size_t format_length, size_t number_of_arguments)
+static bool check_number_of_arguments(const char* format_p, size_t format_length, size_t number_of_arguments)
 {
     size_t current_number_of_arguments = 0;
 
@@ -77,10 +76,9 @@ bool check_number_of_arguments(const char* format_p, size_t format_length, size_
     }
 }
 
-static int my_printf(const char* format_p, ...)
+static int my_printf_helper(const char* format_p, size_t number_of_arguments, ...)
 {
     /* Think about check if number of '%' equals LENGTH(...)! */
-
 
     if (format_p == NULL)
     {
@@ -94,14 +92,14 @@ static int my_printf(const char* format_p, ...)
         return -1;
     }
 
-    va_list va_args;
-    va_start(va_args, format_p);
-
- /*   if(!check_number_of_arguments(format_p, format_length, number_of_arguments))
+    if(!check_number_of_arguments(format_p, format_length, number_of_arguments))
     {
-        perror("Niepoprawna liczba argumentów ! \n");
+        perror("Niepoprawna liczba argumentów !\n");
         return -1;
-    } */
+    }
+
+    va_list va_args;
+    va_start(va_args, number_of_arguments);
 
     enum { STDOUT = 0 };
 
@@ -288,11 +286,11 @@ int main(void)
 {
     my_printf("Example: %c %d %d\n", 'C', 99, -101);
 
-/*    my_printf("Ala %d ma %c kota %d\n", 1, 'a');
+    my_printf("Ala %d ma %c kota %d\n", 1, 'a');
 
     my_printf("Ala %d ma kota\n", 1, 2);
 
-    my_printf("Ala %d %c %d %c ma kota\n", 1, 'a', 1, 'b', 0); */
+    my_printf("Ala %d %c %d %c ma kota\n", 1, 'a', 1, 'b', 0); 
 
     my_printf("The C library function void *memset(void *str, int c, size_t n) %d copies the character c \
     (an unsigned char) to the %c first n characters of the string pointed to, by the argument str %d.\n", 1, 'a', 2);
