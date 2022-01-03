@@ -121,7 +121,7 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
 
     size_t buffer_inserted_elements = 0;
     /* bufor o dużym rozmiarze może pomóc w ograniczeniu liczby wywołań funkcji write */
-    const size_t buffer_length = 1024;
+    const size_t buffer_length = 32;
 
     /* Zmienna typu ssize_t, w której jest przechowywana liczba bajtów wypisanych na wyjście. Wybrałem ten typ, 
        ponieważ funkcja write może zwrócić -1 przy niepowodzeniu */
@@ -167,6 +167,8 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
                     break;
                 }
 
+                /* Podczas pisania liczby całkowitej lub zmiennoprzecinkowej do bufora, może zajść przepełnienie. W dwóch
+                   poniższych przypadkach, ta sytuacja zostaje obsłużona */
                 case 'd':
                 {
                     const int val = (int)va_arg(va_args, int);
@@ -176,6 +178,7 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
                     break;
                 }
 
+                /* Funkcja my_printf również wspiera wypisywanie liczb zmiennoprzecinkowych */
                 case 'f':
                 {
                     const double val = (double)va_arg(va_args, double);
@@ -195,10 +198,14 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
             buffer_inserted_elements += 1;
         }
 
+        /* Jeśli w buforze jest maksymalna liczba elementów lub nastąpiło przepełnienie podczas pisania liczby
+           całkowitej lub zmiennoprzecinkowej do bufora */
         if(buffer_inserted_elements == buffer_length || integer_overflow_occured == true || double_overflow_occured == true)
         {
+            /* Wypisuje zawartość bufora na STDOUT */
             ssize_t bytes_written = write(STDOUT, &buffer[0], buffer_inserted_elements);
 
+            /* Niepowodzenie podczas pisania na STDOUT. Zwracam komunikat błędu i kończę pracę */
             if(bytes_written == -1)
             {
                 perror("Fatalnie - nie udało się wypisać części napisu ! \n");
@@ -206,6 +213,8 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
             }
             else
             {
+                /* Pisanie na STDOUT udało się, zwiększam liczbę wypisanych bajtów oraz czyszczę bufor i ustawiam
+                   liczbę elementów w buforze na 0 */
                 number_of_bytes_written += bytes_written;
 
                 buffer_inserted_elements = 0;
@@ -213,6 +222,9 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
                 (void)memset(&buffer[0], 0, sizeof(buffer));
             }
 
+            /* Przepełnienie zaszło podczas pisania liczby całkowitej lub zmiennoprzecinkowej do bufora - wówczas
+               przekazuje wyczyszczony bufor do odpowiedniej funkcji (jeszcze raz próbuje zapisać liczbę do bufora) i 
+               ustawiam odpowiednią flagę na false */
             if(integer_overflow_occured == true)
             {
 
@@ -237,7 +249,7 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
 
     va_end(va_args);
 
-    if(format_length < buffer_length)
+    if(buffer_inserted_elements < buffer_length)
     {
         ssize_t bytes_written = write(STDOUT, &buffer[0], buffer_inserted_elements);
 
@@ -248,20 +260,10 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
         }
         else
         {
-            return (int)bytes_written;
+            number_of_bytes_written += bytes_written;
         }
 
     }
-
-    ssize_t bytes_written = write(STDOUT, &buffer[0], buffer_inserted_elements);
-
-    if(bytes_written == -1)
-    {
-        perror("Fatalnie - nie udało się wypisać części napisu ! \n");
-        return -1;
-    }
-
-    number_of_bytes_written += bytes_written;
 
     return (int)number_of_bytes_written;
     
@@ -328,6 +330,11 @@ static size_t convert_int_to_byte_array(const int number, size_t place_left, cha
         internal_buffer[internal_buffer_size - 1] = '-';
     }
 
+    /* Jeśli przepełnienie ma miejsce podczas pisania liczby całkowitej do bufora, to nic nie piszę do bufora, ustawiam
+       flagę przepełnienia na true i zwracam 0. Nie jest to najlepsze rozwiązanie - nie zadziała dobrze, gdy liczba ma tyle
+       cyfr, że nie zmieści się cała w całym buforze. Aby temu zaradzić, należy np. w ciele poniższego if, wypisywać kolejne 
+       fragmenty wypisywanej liczby całkowitej na STDOUT. Oprócz tego należy zwiększyć rozmiar bufora - jeśli bufor 
+       ma rozmiar większy niż 1000, to w praktyce jest mało prawdopodobne, aby ktoś próbował wypisać tak dużą liczbę */
     if(place_left < internal_buffer_size)
     {
         *overflow_occured = true;
@@ -344,29 +351,34 @@ static size_t convert_int_to_byte_array(const int number, size_t place_left, cha
     return internal_buffer_size;
 }
 
+/* Funkcja służąca do zamiany liczby zmiennoprzecinkowej na tablicę bajtów */
 static size_t convert_double_to_byte_array(const double number, size_t number_of_places, size_t place_left, char buffer[], bool* overflow_occured)
 {
 
+    /* Zmienna na część ułamkową liczby oraz jej kopia (zmienna pomocnicza) */
     double fractional_part;
     double fractional_part_copy;
 
+    /* Zmienna na część całkowitą liczby zmiennoprzecinkowej oraz zmienne pomocnicze */
     double integer_part;
     int casted_integer_part;
     int casted_integer_part_copy;
 
-    bool is_integer_part_negative = false;
-
+    /* Zmienna na długość części całkowitej liczby */
     size_t integer_part_length = 0;
 
+    /* Funkcja modf z biblioteki math.h służąca do rozdzielania części całkowitej i ułamkowej liczby zmiennoprzecinkowej */
     fractional_part = modf(number, &integer_part);
 
     casted_integer_part = (int) integer_part; 
+
+    /* W poniższym kodzie obliczamy długość częsci całkowitej i piszemy ją (wraz z kropką) do tablicy char. Odbywa się 
+       to podobnie jak w funkcji do konwersji liczby całkowitej na char[] */
 
     if(number < 0)
     {
         casted_integer_part *= (-1);
         integer_part_length += 1;
-        is_integer_part_negative = true;
     }
 
     casted_integer_part_copy = casted_integer_part;
@@ -386,6 +398,7 @@ static size_t convert_double_to_byte_array(const double number, size_t number_of
 
     char double_as_string[integer_part_length + 1 + number_of_places];
 
+    /* Tutaj podobnie jak w funkcji do konwersji int na char[] */
     if(place_left < integer_part_length + 1 + number_of_places)
     {
         *overflow_occured = true;
@@ -419,15 +432,18 @@ static size_t convert_double_to_byte_array(const double number, size_t number_of
         }
     }
 
-    if(is_integer_part_negative)
+    if(number < 0)
     {
         double_as_string[0] = '-';
     }
 
     double_as_string[integer_part_length] = '.';
 
+    /* W poniższym kodzie piszę część ułamkową do bufora wewnętrznego */
+
     position = integer_part_length + 1;
 
+    /* Jeśli liczba jest ujemna to mnożę ją razy minus 1 - wynika to ze sposobu działania funkcji modf */
     if(number < 0)
     {
         fractional_part *= (-1);
@@ -435,10 +451,13 @@ static size_t convert_double_to_byte_array(const double number, size_t number_of
 
     while(position < integer_part_length + 1 + number_of_places)
     {
+        /* Mnoże część ułamkową razy 10 */
         fractional_part *=  10;
 
+        /* Rozdzielam na część ułamkową i całkowitą */
         fractional_part = modf(fractional_part, &integer_part);
 
+        /* Rzutuje na int, a później na char i piszę do bufora wewnętrznego */
         casted_integer_part = (int) integer_part;
 
         char digit = (char) casted_integer_part;
@@ -448,6 +467,7 @@ static size_t convert_double_to_byte_array(const double number, size_t number_of
         position += 1;
     }
 
+    /* Przepisuje liczbę zmiennoprzecinkową do bufora */
     for(size_t i = 0 ; i < integer_part_length + 1 + number_of_places ; i++)
     {
         buffer[i] = double_as_string[i];      
@@ -461,6 +481,8 @@ static size_t convert_double_to_byte_array(const double number, size_t number_of
 
 int main(void)
 {  
+    /* W tej funkcji testuje doimplementowane funkcjonalności */
+
     printf("Test inicjacyjny: \n");
 
     my_printf("Example: %c %d %d\n", 'C', 99, -101);
