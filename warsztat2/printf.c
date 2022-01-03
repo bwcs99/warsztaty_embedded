@@ -4,7 +4,9 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <math.h>
 
+/* Trik z makrami do obliczania liczby przekazanych do funkcji argumentów */
 #define VA_ARGS_LENGTH_PRIV( _1,    _2,   _3,   _4,   _5,   _6,   _7,   _8,   _9,  _10, \
                              _11,  _12,  _13,  _14,  _15,  _16,  _17,  _18,  _19,  _20, \
                              _21,  _22,  _23,  _24,  _25,  _26,  _27,  _28,  _29,  _30, \
@@ -34,14 +36,21 @@
              19,  18,  17,  16,  15,  14,  13,  12,  11,  10, \
               9,   8,   7,   6,   5,   4,   3,   2,   1)
 
+/*  Funkcja my_printf "przykrywa" funckję my_printf_helper - ułatwia to sprawdzanie poprawności liczby przekazanych
+    argumentów do my_printf */
 #define my_printf(format_p, ...) my_printf_helper(format_p, VA_ARGS_LENGTH(__VA_ARGS__),  __VA_ARGS__)
 
-static size_t convert_int_to_byte_array(const int number, char buffer[]);
+static size_t convert_int_to_byte_array(const int number, size_t place_left, char buffer[], bool* overflow_occured);
 
+static size_t convert_double_to_byte_array(const double number, size_t number_of_places, size_t place_left, char buffer[], bool* overflow_occured);
+
+/* Funkcja do obliczania liczby argumentów w napisie formatującym */
 static bool check_number_of_arguments(const char* format_p, size_t format_length, size_t number_of_arguments)
 {
+    /* Aktualna liczba argumentów w ciągu formatującym */
     size_t current_number_of_arguments = 0;
 
+    /* Iterujemy po ciągu formatującym i liczymy liczbę literek c, d i f po znaku % */
     for(size_t i = 0 ; i < format_length ; i++)
     {
         if(format_p[i] == '%')
@@ -58,6 +67,9 @@ static bool check_number_of_arguments(const char* format_p, size_t format_length
                     case 'd':
                         current_number_of_arguments += 1;
                         break;
+                    case 'f':
+                        current_number_of_arguments += 1;
+                        break;
                     default:
                         break;
                 }
@@ -66,6 +78,8 @@ static bool check_number_of_arguments(const char* format_p, size_t format_length
         }
     }
 
+    /* Jeśli liczba argumentów w ciągu formatującym jest równa liczbie argumentów przekazanych do funkcji, 
+       to wtedy zwracamy true. W przeciwnym przypadku false. */ 
     if(current_number_of_arguments == number_of_arguments)
     {
         return true;
@@ -76,6 +90,7 @@ static bool check_number_of_arguments(const char* format_p, size_t format_length
     }
 }
 
+/* Główna funkcja do wypisywania napisów */
 static int my_printf_helper(const char* format_p, size_t number_of_arguments, ...)
 {
     /* Think about check if number of '%' equals LENGTH(...)! */
@@ -92,6 +107,7 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
         return -1;
     }
 
+    /* Sprawdzamy, czy liczba argumentów w ciągu formatującym jest równa liczbie argumentów przekazanych do funkcji */
     if(!check_number_of_arguments(format_p, format_length, number_of_arguments))
     {
         perror("Niepoprawna liczba argumentów !\n");
@@ -104,11 +120,22 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
     enum { STDOUT = 0 };
 
     size_t buffer_inserted_elements = 0;
-    const size_t buffer_length = 256;
+    /* bufor o dużym rozmiarze może pomóc w ograniczeniu liczby wywołań funkcji write */
+    const size_t buffer_length = 1024;
 
+    /* Zmienna typu ssize_t, w której jest przechowywana liczba bajtów wypisanych na wyjście. Wybrałem ten typ, 
+       ponieważ funkcja write może zwrócić -1 przy niepowodzeniu */
     ssize_t number_of_bytes_written = 0;
 
-    size_t offset = 0;
+    /* Zmienna na liczbę wolnych miejsc w buforze */
+    size_t place_left = 0;
+
+    int helper_integer_value = 0;
+    double helper_double_value = 0.0;
+
+    /* Flagi, które oznaczają, że podczas pisania liczby integer lub double, nastąpiło przepełnienie bufora */
+    bool integer_overflow_occured = false;
+    bool double_overflow_occured = false;
 
     /* Think about buffer overflow or too many write calls! */
     char buffer[buffer_length];
@@ -143,7 +170,18 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
                 case 'd':
                 {
                     const int val = (int)va_arg(va_args, int);
-                    buffer_inserted_elements += convert_int_to_byte_array(val, &buffer[buffer_inserted_elements]);
+                    helper_integer_value = val;
+                    place_left = buffer_length - buffer_inserted_elements;
+                    buffer_inserted_elements += convert_int_to_byte_array(val, place_left, &buffer[buffer_inserted_elements], &integer_overflow_occured);
+                    break;
+                }
+
+                case 'f':
+                {
+                    const double val = (double)va_arg(va_args, double);
+                    helper_double_value = val;
+                    place_left = buffer_length - buffer_inserted_elements;
+                    buffer_inserted_elements += convert_double_to_byte_array(val, 6, place_left, &buffer[buffer_inserted_elements], &double_overflow_occured);
                     break;
                 }
 
@@ -157,7 +195,7 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
             buffer_inserted_elements += 1;
         }
 
-        if(buffer_inserted_elements == buffer_length)
+        if(buffer_inserted_elements == buffer_length || integer_overflow_occured == true || double_overflow_occured == true)
         {
             ssize_t bytes_written = write(STDOUT, &buffer[0], buffer_inserted_elements);
 
@@ -171,9 +209,27 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
                 number_of_bytes_written += bytes_written;
 
                 buffer_inserted_elements = 0;
+
                 (void)memset(&buffer[0], 0, sizeof(buffer));
             }
 
+            if(integer_overflow_occured == true)
+            {
+
+                place_left = buffer_length;
+                buffer_inserted_elements += convert_int_to_byte_array(helper_integer_value, place_left, &buffer[buffer_inserted_elements], &integer_overflow_occured);
+
+                integer_overflow_occured = false;
+
+            } 
+            else if(double_overflow_occured == true)
+            {
+
+                place_left = buffer_length;
+                buffer_inserted_elements += convert_double_to_byte_array(helper_double_value, 6, place_left, &buffer[buffer_inserted_elements], &double_overflow_occured);
+
+                double_overflow_occured = false;
+            }
 
         }
 
@@ -206,11 +262,12 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
     }
 
     number_of_bytes_written += bytes_written;
+
     return (int)number_of_bytes_written;
     
 }
 
-static size_t convert_int_to_byte_array(const int number, char buffer[])
+static size_t convert_int_to_byte_array(const int number, size_t place_left, char buffer[], bool* overflow_occured)
 {
     // STEP1: calculate how many characters will we have including 'minus'
     int copy_number = number;
@@ -271,6 +328,13 @@ static size_t convert_int_to_byte_array(const int number, char buffer[])
         internal_buffer[internal_buffer_size - 1] = '-';
     }
 
+    if(place_left < internal_buffer_size)
+    {
+        *overflow_occured = true;
+
+        return 0;
+    }
+
     // assign from VLA to buffer
     for (size_t i = 0; i < internal_buffer_size; ++i)
     {
@@ -280,17 +344,144 @@ static size_t convert_int_to_byte_array(const int number, char buffer[])
     return internal_buffer_size;
 }
 
+static size_t convert_double_to_byte_array(const double number, size_t number_of_places, size_t place_left, char buffer[], bool* overflow_occured)
+{
+
+    double fractional_part;
+    double fractional_part_copy;
+
+    double integer_part;
+    int casted_integer_part;
+    int casted_integer_part_copy;
+
+    bool is_integer_part_negative = false;
+
+    size_t integer_part_length = 0;
+
+    fractional_part = modf(number, &integer_part);
+
+    casted_integer_part = (int) integer_part; 
+
+    if(number < 0)
+    {
+        casted_integer_part *= (-1);
+        integer_part_length += 1;
+        is_integer_part_negative = true;
+    }
+
+    casted_integer_part_copy = casted_integer_part;
+
+    if(casted_integer_part == 0)
+    {
+        integer_part_length += 1;
+    }
+    else 
+    {
+        while(casted_integer_part_copy > 0)
+        {
+            casted_integer_part_copy /= 10;
+            integer_part_length += 1;
+        }
+    }
+
+    char double_as_string[integer_part_length + 1 + number_of_places];
+
+    if(place_left < integer_part_length + 1 + number_of_places)
+    {
+        *overflow_occured = true;
+
+        return 0;
+    }
+
+    casted_integer_part_copy = casted_integer_part;
+
+    size_t position = integer_part_length - 1;
+
+    if(casted_integer_part == 0)
+    {
+        char digit = (char) (casted_integer_part);
+
+        double_as_string[position] = digit + 48;
+    } 
+    else
+    {
+        while(casted_integer_part_copy > 0)
+        {
+
+            char digit = (char)(casted_integer_part_copy % 10);
+
+            double_as_string[position] = digit + 48;
+
+            position -= 1;
+
+            casted_integer_part_copy /= 10; 
+
+        }
+    }
+
+    if(is_integer_part_negative)
+    {
+        double_as_string[0] = '-';
+    }
+
+    double_as_string[integer_part_length] = '.';
+
+    position = integer_part_length + 1;
+
+    if(number < 0)
+    {
+        fractional_part *= (-1);
+    }
+
+    while(position < integer_part_length + 1 + number_of_places)
+    {
+        fractional_part *=  10;
+
+        fractional_part = modf(fractional_part, &integer_part);
+
+        casted_integer_part = (int) integer_part;
+
+        char digit = (char) casted_integer_part;
+
+        double_as_string[position] = digit + 48;
+
+        position += 1;
+    }
+
+    for(size_t i = 0 ; i < integer_part_length + 1 + number_of_places ; i++)
+    {
+        buffer[i] = double_as_string[i];      
+    }
+
+    return (size_t)(integer_part_length + 1 + number_of_places);
+
+}
+
 
 
 int main(void)
-{
+{  
+    printf("Test inicjacyjny: \n");
+
     my_printf("Example: %c %d %d\n", 'C', 99, -101);
+
+    printf("\n");
+
+    printf("Testy sprawdzania poprawnej liczby argumentów: \n");
 
     my_printf("Ala %d ma %c kota %d\n", 1, 'a');
 
     my_printf("Ala %d ma kota\n", 1, 2);
 
     my_printf("Ala %d %c %d %c ma kota\n", 1, 'a', 1, 'b', 0); 
+
+    my_printf("Ala ma %f %d kota %c i drzewo binarne %f\n", -0.84757, 1, 'a');
+
+    my_printf("%f drzewo binarne %d\n", -0.0003488, 3);
+
+    printf("\n");
+
+    printf("Testy ogólne: \n");
 
     my_printf("The C library function void *memset(void *str, int c, size_t n) %d copies the character c \
     (an unsigned char) to the %c first n characters of the string pointed to, by the argument str %d.\n", 1, 'a', 2);
@@ -303,6 +494,18 @@ int main(void)
     my_printf("zip  is  a  compression  and  file packaging utility for Unix, VMS, MSDOS, OS/2, Windows 9x/NT/XP, Minix, Atari, Macintosh, \
     Amiga, and Acorn RISC OS. %d It is analogous to a combination of the Unix commands tar(1) and compress(1) and  is  compatible \
     with PKZIP (Phil Katz's ZIP for MSDOS systems).\n", 10000); 
+
+    my_printf("Test wypisywania liczb zmiennoprzecinkowych, normalnych i znaków 1 : %f %d %c %f %f\n", 2.13456, 1, 'a', 345.58586868, -123.4909509);
+
+    my_printf("Test wypisywania liczb zmiennoprzecinkowych, normalnych i znaków 2 : %f %d %f %f\n", -0.03743848, -2, 0.848588, -0.83848);
+
+    my_printf("ABCDEFGHIJKLMNOQPRSTWXYZ12345678901234356 %d 6070\n", 1);
+
+    my_printf("ABCDEFGHIJKLMNOQPRSTWXYZ1 %f 2345678901234356 %f 6070\n", 1.67847578578888, 1.89404);
+
+    printf("\n");
+
+    printf("Koniec testów...\n");
 
     return 0;
 }
