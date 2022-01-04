@@ -121,7 +121,7 @@ static int my_printf_helper(const char* format_p, size_t number_of_arguments, ..
 
     size_t buffer_inserted_elements = 0;
     /* bufor o dużym rozmiarze może pomóc w ograniczeniu liczby wywołań funkcji write */
-    const size_t buffer_length = 32;
+    const size_t buffer_length = 1024;
 
     /* Zmienna typu ssize_t, w której jest przechowywana liczba bajtów wypisanych na wyjście. Wybrałem ten typ, 
        ponieważ funkcja write może zwrócić -1 przy niepowodzeniu */
