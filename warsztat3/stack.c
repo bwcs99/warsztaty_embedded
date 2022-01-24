@@ -1,3 +1,4 @@
+///@file stack.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +7,7 @@
 
 void stackInitialize(StackType * stack){
 
-    *stack = NULL;
+  *stack = NULL;
 
 }
 
@@ -37,7 +38,7 @@ int stackPush(void * el, size_t nbrOfBytes, StackType * stack){
 
         return STACK_OVERFLOW;
 
-    }else{
+    } else{
 
         tmp->storage = elem;
         tmp->next = *stack;
@@ -51,6 +52,10 @@ int stackPush(void * el, size_t nbrOfBytes, StackType * stack){
 
 void stackPop(StackType * stack){
 
+  if(stackEmpty(*stack)){
+    return;
+  }
+
    StackType tmp = *stack;
    void * el = (*stack)->storage;
    *stack = (*stack)->next;
@@ -58,5 +63,70 @@ void stackPop(StackType * stack){
    free(el);
    free(tmp);
 
+}
+
+/**
+ * Funkcja od niszczenia stosu.
+ * 
+ * @param[in] stack 
+ */
+void stackDestroy(StackType* stack){
+
+  while(!stackEmpty(*stack)){
+
+    stackPop(stack);
+
+  }
+
+  free(*stack);
+  
+}
+
+/**
+ * Funkcja przechodząca po stosie i wykonująca na każdym jego elemencie funkcję fun.
+ * 
+ * @param[in] stack 
+ * @param[in] fun 
+ */
+void traverseStack(StackType stack, void (*fun)(StackType)){
+
+  if(stackEmpty(stack)){
+    return;
+  }
+
+  StackType stackCopy = stack;
+
+  while(stackCopy != NULL){
+
+    fun(stackCopy);
+
+    stackCopy = stackCopy->next;
+
+  }
+
+}
+
+/**
+ * @brief Funkcja zwracjąca liczbę elementów znajdujących się na stosie.
+ * 
+ * @param[in] stack 
+ * @return size_t 
+ */
+size_t getNbrOfElements(StackType stack){
+
+  if(stackEmpty(stack)){
+    return (size_t)0;
+  }
+
+  size_t count = 0;
+
+  StackType stackCopy = stack;
+
+  while(stackCopy != NULL){
+    count += 1;
+    stackCopy = stackCopy->next;
+  }
+
+  return count;
 }
 

@@ -18,5 +18,8 @@ int stackEmpty(StackType stack);
 int stackPush(void * el, size_t nbrOfBytes, StackType * stack);
 void stackPop(StackType * stack);
 void * stackTop(StackType stack);
+void stackDestroy(StackType* stack);
+void traverseStack(StackType stack, void (*fun)(StackType));
+size_t getNbrOfElements(StackType stack);
 
 #endif

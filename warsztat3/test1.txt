@@ -1,0 +1,115 @@
+Naszym celem jest stworzenie galerii do przechowywania zdjęć zrobionych za pomocą
+aparatu w smartfonie. Będzie ona umożliwiała tagowanie zdjęć, grupowanie ich w foldery,
+zapisywanie informacji na ich temat (takich jak czas i miejsce wykonania) oraz sortowanie
+po dacie wykonania. Również będzie możliwe wyświetlenie tych zdjęć, które mają
+odpowiednie tagi lub zostały zrobione w konkretnym miejscu. Oprócz tego aplikacja może
+realizować funkcjonalności takie jak : nakładanie filtrów lub dzielenie się zdjęciami na
+portalach społecznościowych.
+Wersja MVP:
+1. Sortowanie po dacie wykonania zdjęć (domyślnie zdjęcia są dodawane do galerii
+chronologicznie, ale można uruchomić wyświetlanie w odwrotnej kolejności )
+2. Wykonywanie i zapisywanie zdjęć
+3. Możliwość manualnego tagowania zdjęć i wyszukiwania zdjęć po tagach
+4. Możliwość usuwania zdjęć
+5. Możliwość usuwania/zmieniania tagów
+6. Wyświetlanie pojedynczych zdjęć ze wszystkimi informacjami, które są z nimi
+związane (tagi, czas oraz miejsce wykonania)
+7. Ustawianie miejsca wykonania zdjęcia na podstawie geolokacji (o ile użytkownik na
+to pozwoli)
+8. Wyszukiwanie zdjęć po miejscu i dacie wykonania
+Nice-To-Have:
+1. Nakładanie filtrów na zrobione zdjęcia (z wykorzystaniem odpowiednich bibliotek)
+2. Dzielenie się zdjęciami na portalach społecznościowych
+3. Przesyłanie zdjęć na inny telefon przez Bluetooth (bardzo dodatkowe)
+Acceptance Criteria:
+MVP:
+Sortowanie po dacie wykonania (wyświetlanie w odwrotnej kolejności):
+1. Użytkownik naciska na odpowiedni przycisk
+2. Pojawia się lista z funkcjonalnościami
+3. Użytkownik wybiera opcję wyświetlenia zdjęć w odwrotnej kolejności
+4. Uruchamia się osobna aktywność, w której określamy folder, w którym
+chcemy zmienić kolejność wyświetlania (jeśli nie podamy żadnego folderu, to
+wszystkie zdjęcia będą wyświetlane w odwrotnej kolejności)
+5. Użytkownik za pomocą przycisku zatwierdza wybór
+6. Aktywność kończy działanie. Wracamy do aktywności głównej, gdzie mamy
+odpowiednio zmienioną kolejność wyświetlania zdjęć
+Wykonywanie zdjęć i ich zapis:
+1. Użytkownik wciska przycisk z plusem, który oznacza zrobienie i dodanie
+nowego zdjęcia (przycisk w lewym dolnym rogu ekranu)
+2. Uruchamia się aktywność, której celem jest zrobienie zdjęcia za pomocą
+aparatu i zapisanie go
+Tagowanie zdjęć:
+1. Użytkownik klika na listę z funkcjonalnościami i wybiera tagowanie2.
+3.
+4.
+5.
+Użytkownik naciska zdjęcie, które chce otagować
+Pojawia się osobna aktywność (kreator tagów)
+Użytkownik wymyśla tag i zatwierdza swój wybór (lub przerywa cały proces)
+Wracamy do aktywności głównej. Wybrane zdjęcie jest otagowane (lub nie,
+jeśli przerwaliśmy proces)
+Wyszukiwanie po tagach:
+1. Użytkownik uruchamia listę funkcjonalności i wybiera wyszukiwanie zdjęć po
+tagach
+2. Uruchamia się osobna aktywność, w której użytkownik wymienia interesujące
+go tagi
+3. Wracamy do aktywności głównej, gdzie widzimy zdjęcia z interesującymi nas
+tagami
+Usuwanie zdjęć:
+1. Użytkownik klika wybrane zdjęcie i przytrzymuje palec
+2. Pojawia się okienko z potwierdzeniem operacji
+3. Użytkownik zatwierdza operację bądź ją anuluje
+4. W zależności od decyzji użytkownika zdjęcie jest usunięte lub nie
+Zmienianie/usuwanie tagów:
+1. Użytkownik uruchamia listę funkcjonalności
+2. Użytkownik wybiera opcję edycji tagów
+3. Uruchamia się aktywność z obecnymi tagami przypisanymi do zdjęcia
+4. Jeśli użytkownik chce usunąć tag to klika przycisk “Usuń” i wybiera tag do
+usunięcia
+5. W przeciwnym przypadku, użytkownik klika przycisk “Dodaj” i dodaje nowy
+tag
+6. Po zakończeniu, użytkownik wraca do aktywności głównej
+Wyświetlanie informacji o zdjęciach:
+1. Użytkownik klika na listę z funkcjonalnościami i wybiera "Szczegóły"
+2. Pojawia się osobna aktywność, w której zawarte są informacje: data i godzina
+wykonania zdjęcia
+3. Informacje o pliku: nazwa, tag, miejsce, rozmiar zdjęcia, wymiary zdjęcia w
+pikselach
+4. Wracamy do aktywności głównej
+Ustawianie informacji o miejscu wykonania zdjęcia
+1. Użytkownik klika w plus po lewej stronie na dole
+2. Pojawia się komunikat "Czy zezwolić na użycie geolokacji? Wybór: tak lub nie
+3. Po kliknięciu tak zdjęcie zostanie wykonane z geolokalizacją, zaś po wyborze
+nie zdjęcie wykona się bez geolokalizacji
+Wyszukiwanie zdjęć po miejscu i dacie wykonania
+1. Użytkownik klika przycisk z funkcjonalnościami
+2. Użytkownik klika przycisk wyszukaj po dacie lub wyszukaj po miejscu
+wykonania
+3. Pojawia się okienko, w którym użytkownik wpisuje odpowiednio datę lub
+miejsce
+4. Po wpisaniu ekran scrolluje sie do zdjecia, ktore odpowiada wpisanym
+parametrom
+5. można również kliknąć przycisk dalej, gdzie będzie scrollować nas do
+kolejnego zdjęcia6. odpowiadającego naszym parametrom
+Materiał z wykładów: Aktywności, Intencje, Przełączanie aktywności i przekazywanie danych
+między nimi, Interfejs użytkownika, Zasoby i dostęp do nich, RecyclerView, Fragmenty,
+Wykorzystanie bibliotek dla Androida, Projektowanie aplikacji dla różnych wielkości ekranów,
+Projektowanie GUI dla orientacji poziomej ( i zapewnienie, że aplikacja nie przestanie wtedy
+działać).
+Nice-To-Have: Nakładanie filtrów na zrobione zdjęcia:
+1. Użytkownik wybiera opcję nałożenia filtru na zdjęcie
+2. Użytkownik wybiera zdjęcie, na które chce nałożyć filtr
+3. Pojawia się okno z żądaniem potwierdzenia operacji
+4. W zależności od decyzji użytkownika filtr jest nałożony na zdjęcie lub nie Dzielenie się zdjęciami na portalach społecznościowych lub przez Bluetooth::
+1. Użytkownik wybiera opcję udostępnienia zdjęcia
+2. Pojawia się okno z żądaniem wyboru udostępnienia zdjęcia:
+a. Na portale społecznościowe (np. Facebook)
+b. Przez Bluetooth
+3. W zależności od sposobu udostępnienia:
+a. Pojawia się okno z żądaniem potwierdzenia operacji. Jeśli użytkownik
+ją potwierdzi, to zdjęcie zostanie opublikowane na portalu
+społecznościowym (ewentualnie można anulować cały proces)
+b. Pojawia się żądanie wyboru urządzenia (do którego ma być przesłane
+zdjęcie) i potwierdzenia operacji.
+c. W zależności od decyzji użytkownika, zdjęcie zostanie przesłane za
+pomocą Bluetooth na inne urządzenie.
